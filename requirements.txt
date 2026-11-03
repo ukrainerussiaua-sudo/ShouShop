@@ -1,0 +1,12 @@
+# Python 3.10+. Только pip-пакеты (готовые wheels), никаких системных установок.
+# Комментарии — только на отдельных строках (хостинг передаёт строку в pip целиком).
+# aiogram: лучше свежая версия, иконки на кнопках = Bot API 9.4+
+# aiogram: Bot API 9.4 button icons and styles
+aiogram>=3.25,<4
+aiohttp>=3.10,<4
+supabase>=2.7.4,<3
+python-dotenv>=1.0.0
+tonsdk>=1.0.13
+# необязательное ускорение (Linux/macOS), на Windows пропускается
+uvloop>=0.19; sys_platform != "win32"
+tzdata
