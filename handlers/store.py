@@ -24,7 +24,7 @@ from aiogram.types import (CallbackQuery, InlineKeyboardMarkup, InputMediaPhoto,
 import fragment
 import ton_wallet
 from config import (ADMIN_IDS, SHOP_NAME, SUPPORT_URL, REVIEWS_CHANNEL_URL, BOT_USERNAME, MENU_PHOTO_PATH,
-                    GRAM_PHOTO_PATH, REVIEWS_PHOTO_PATH, BONUS_PHOTO_PATH, RENT_PHOTO_PATH, PAY_PHOTO_PATH,
+                    GRAM_PHOTO_PATH, REVIEWS_PHOTO_PATH, BONUS_PHOTO_PATH, RENT_PHOTO_PATH, PAY_PHOTO_PATH, RECIPIENT_PHOTO_PATH,
                     PROFILE_PHOTO_PATH, STARS_PHOTO_PATH, PREMIUM_PHOTO_PATH, NFT_PHOTO_PATH,
                     CARD_NUMBER, CARD_HOLDER, CARD_BANK, BONUS_NAME, RENT_URL)
 from database import db
@@ -258,7 +258,7 @@ async def _ask_username(target: Message, state: FSMContext, kind: str, qty: int)
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [ib("Себе", "profile", callback_data="st:self")],
         [ib("Отмена", "back", callback_data="st:cancelflow")]])
-    await target.answer(f"<b>{_title(kind, qty)}</b>\n\nВведите @username получателя:", reply_markup=kb)
+    await _screen(target, f"<b>{_title(kind, qty)}</b>\n\nВведите @username получателя:", kb, _photo(RECIPIENT_PHOTO_PATH))
 
 
 @router.callback_query(F.data.startswith("st:sp:"))
@@ -389,7 +389,12 @@ async def on_order_cancel(cb: CallbackQuery, state: FSMContext):
         db.order_claim(o["id"], ("draft", "awaiting_receipt"), "canceled")
         await state.set_state(None)
         await cb.answer("Заказ отменён")
-        return await _edit(cb, f"❌ Заказ #{o['id']} отменён.")
+        await _edit(cb, f"❌ Заказ #{o['id']} отменён.", None)   # без кнопок «Назад»/«В меню»
+        try:
+            await cb.message.edit_reply_markup(reply_markup=None)   # на случай, если подпись не обновилась
+        except Exception:
+            pass
+        return
     await cb.answer("Заказ уже нельзя отменить.", show_alert=True)
 
 
@@ -452,6 +457,10 @@ async def on_next(cb: CallbackQuery, state: FSMContext):
     await state.set_state(Buy.receipt)
     await state.update_data(pay_oid=o["id"])
     await cb.answer()
+    try:  # у карточки оплаты убираем «Далее/Отмена» — они больше не нужны
+        await cb.message.edit_reply_markup(reply_markup=None)
+    except Exception:
+        pass
     kb = InlineKeyboardMarkup(inline_keyboard=[[_cancel_btn(o["id"])]])
     await cb.message.answer(f"📎 Отправьте <b>скриншот, файл или ссылку на квитанцию</b> об оплате "
                             f"{int(round(float(o['amount'])))} грн одним сообщением.", reply_markup=kb)

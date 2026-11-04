@@ -108,6 +108,7 @@ REVIEWS_PHOTO_PATH  = os.path.join(IMAGES_DIR, "reviews.jpg")
 BONUS_PHOTO_PATH    = os.path.join(IMAGES_DIR, "bonus.jpg")
 RENT_PHOTO_PATH     = os.path.join(IMAGES_DIR, "rent.jpg")
 PAY_PHOTO_PATH      = os.path.join(IMAGES_DIR, "pay.jpg")
+RECIPIENT_PHOTO_PATH = os.path.join(IMAGES_DIR, "recipient.jpg")   # баннер «КОМУ ОТПРАВИТЬ» (recipient_<язык>.jpg)
 LANG_PHOTO_PATH     = os.path.join(IMAGES_DIR, "lang.jpg")      # экран выбора языка (необязательно)
 # Баннеры под язык: рядом с любым баннером можно положить <имя>_<язык>.jpg — home_ru.jpg, home_uk.jpg, home_en.jpg,
 # sub_ru.jpg, profile_en.jpg … Бот сам берёт файл под язык пользователя, а если его нет — общий <имя>.jpg (см. utils.banner_path).
