@@ -225,7 +225,7 @@ class Database:
             raise
 
     def next_review_number(self) -> int:
-        """Следующий номер отзыва: не меньше REVIEW_START_NUMBER (1085), дальше +1 к максимальному."""
+        """Следующий номер отзыва: не меньше REVIEW_START_NUMBER (979), дальше +1 к максимальному."""
         from config import REVIEW_START_NUMBER
         r = self.sb.table("bot_reviews").select("id").order("id", desc=True).limit(1).execute()
         top = int(r.data[0]["id"]) if r.data else 0

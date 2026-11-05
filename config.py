@@ -38,9 +38,9 @@ REVIEWS_CHANNEL      = os.getenv("REVIEWS_CHANNEL", "@repmango").strip() or "@re
 # NFT_BUSINESS_CONNECTION_ID нужен лишь как запасной вариант.
 NFT_WAREHOUSE_IDS = {int(x) for x in os.getenv("NFT_WAREHOUSE_IDS", "").replace(" ", "").split(",") if x.strip().lstrip("-").isdigit()}
 NFT_BUSINESS_CONNECTION_ID = os.getenv("NFT_BUSINESS_CONNECTION_ID", "").strip()
-# Нумерация отзывов: первый новый отзыв получит этот номер (#1085, #1086 …)
-REVIEW_START_NUMBER = int(os.getenv("REVIEW_START_NUMBER", "1085") or 1085)
-# Префикс хештега: "" → #1085 (Telegram не делает кликабельными хештеги из одних цифр), "r" → #r1085, "review_" → #review_1085
+# Нумерация отзывов: первый новый отзыв получит этот номер (#979, #980 …)
+REVIEW_START_NUMBER = int(os.getenv("REVIEW_START_NUMBER", "979") or 979)
+# Префикс хештега: "" → #979 (Telegram не делает кликабельными хештеги из одних цифр), "r" → #r979, "review_" → #review_979
 REVIEW_TAG_PREFIX   = os.getenv("REVIEW_TAG_PREFIX", "").strip()
 # Премиум-эмодзи звёзд в отзывах (ID из пака; пусто = звёзды из emoji.py). Пустая звезда — необязательно.
 REVIEW_STAR_EMOJI_ID       = os.getenv("REVIEW_STAR_EMOJI_ID", "").strip()
@@ -158,7 +158,7 @@ FRAGMENT_STEL_TOKEN     = os.getenv("FRAGMENT_STEL_TOKEN", "").strip()
 FRAGMENT_STEL_TON_TOKEN = os.getenv("FRAGMENT_STEL_TON_TOKEN", "").strip()
 FRAGMENT_USER_AGENT   = os.getenv("FRAGMENT_USER_AGENT", "").strip()      # лучше вставить User-Agent вашего браузера
 FRAGMENT_STEL_DT        = os.getenv("FRAGMENT_STEL_DT", "-180").strip()    # смещение часового пояса, мин (МСК = -180)
-FRAGMENT_SHOW_SENDER    = os.getenv("FRAGMENT_SHOW_SENDER", "true").strip().lower() in {"1", "true", "yes", "on"}  # true = не анонимно
+FRAGMENT_SHOW_SENDER    = False   # Stars/Premium с Fragment всегда уходят АНОНИМНО (имя владельца не показывается); из .env больше не читается
 TON_MNEMONIC            = os.getenv("TON_MNEMONIC", "").strip()            # 24 слова горячего кошелька
 TON_WALLET_VERSION      = os.getenv("TON_WALLET_VERSION", "v4r2").strip().lower()
 TONCENTER_URL           = os.getenv("TONCENTER_URL", "https://toncenter.com/api/v2").rstrip("/")
