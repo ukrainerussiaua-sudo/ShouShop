@@ -5,7 +5,7 @@ handlers/store.py — SHOU SHOP: новый интерфейс и оплата �
   выбор товара → [Оплатить] → реквизиты (карта, получатель, сумма) → [Далее] →
   клиент присылает скриншот/квитанцию → админ нажимает «Подтвердить» → заказ выполняется.
 
-Разделы: Каталог NFT-подарков, Звёзды, Премиум, GRAM, Профиль (+ бонус-слоты, рефералы, язык), Отзывы, Аренда NFT.
+Разделы: Каталог NFT-подарков, Звёзды, Премиум, GRAM, Профиль (+ рефералы, язык), Отзывы, Аренда NFT.
 Админ-команды: /gram_rate 67 · /usd_rate (фиксированный курс 47) · /pack 50 45 · /rent_text текст
 """
 from __future__ import annotations
@@ -24,9 +24,9 @@ from aiogram.types import (CallbackQuery, InlineKeyboardMarkup, InputMediaPhoto,
 import fragment
 import ton_wallet
 from config import (ADMIN_IDS, SHOP_NAME, SUPPORT_URL, REVIEWS_CHANNEL_URL, BOT_USERNAME, MENU_PHOTO_PATH,
-                    GRAM_PHOTO_PATH, REVIEWS_PHOTO_PATH, BONUS_PHOTO_PATH, RENT_PHOTO_PATH, PAY_PHOTO_PATH, RECIPIENT_PHOTO_PATH,
+                    GRAM_PHOTO_PATH, REVIEWS_PHOTO_PATH, RENT_PHOTO_PATH, PAY_PHOTO_PATH, RECIPIENT_PHOTO_PATH,
                     PROFILE_PHOTO_PATH, STARS_PHOTO_PATH, PREMIUM_PHOTO_PATH, NFT_PHOTO_PATH,
-                    CARD_NUMBER, CARD_HOLDER, CARD_BANK, BONUS_NAME, RENT_URL)
+                    CARD_NUMBER, CARD_HOLDER, CARD_BANK, RENT_URL)
 from database import db
 import keyboards as K
 from keyboards import B_STARS, B_PREMIUM, B_GRAM, B_NFT, B_PROFILE, B_REVIEWS, B_RENT, ib
@@ -41,9 +41,6 @@ STAR_PACKS = (50, 100, 150, 250, 350, 500, 750, 1000, 1500, 2500)
 PACKS_PER_PAGE = 6
 NFT_PER_PAGE = 8
 GRAM_MIN, GRAM_MAX = 1, 100_000_000
-SPIN_TIERS = ((2000, 20), (1000, 10), (500, 5), (100, 2), (50, 1))        # звёзд в заказе → спинов
-SLOT_REWARD = {64: 7, 1: 5, 22: 1, 43: 1}                                  # значение 🎰 → бонусные звёзды
-WITHDRAW_MIN = 100
 FILTERS = (("new", "новые"), ("cheap", "дешёвые"), ("expensive", "дорогие"))
 USD_UAH_RATE = 47.0
 class Buy(StatesGroup):
@@ -745,23 +742,6 @@ async def _finish_admin_msg(cb: CallbackQuery, suffix: str, kb=None):
         print(f"[store admin edit] {e!r}")
 
 
-def award_spins(uid: int, stars_qty: int) -> int:
-    for need, spins in SPIN_TIERS:
-        if stars_qty >= need:
-            b = db.bonus_get(uid)
-            db.bonus_set(uid, b["spins"] + spins, b["stars"])
-            return spins
-    return 0
-
-
-def _ref_spin(uid: int):
-    """Реферал: пригласившему +1 спин за покупку приглашённого (баланса в магазине больше нет)."""
-    ref = (db.find_user_by_id(uid) or {}).get("referrer_id")
-    if ref:
-        b = db.bonus_get(int(ref))
-        db.bonus_set(int(ref), b["spins"] + 1, b["stars"])
-
-
 @router.callback_query(F.data.startswith("so:ok:"), IS_ADMIN)
 async def adm_ok(cb: CallbackQuery, bot: Bot):
     oid = int(cb.data.split(":")[2])
@@ -787,11 +767,7 @@ async def adm_ok(cb: CallbackQuery, bot: Bot):
         foid = db.add_fragment_order(uid, kind, qty, target, float(o["amount"]))
         db.set_fragment_order(foid, "done", (res or {}).get("req_id", ""))
         db.add_sale(uid, kind, f"{o['title']} → @{target}", qty, float(o["amount"]), float(o["cost"]), 0.0)
-        spins = award_spins(uid, qty) if kind == "stars" else 0
-        _ref_spin(uid)
         text = f"✅ <b>Заказ #{oid} выполнен!</b>\n\n{html.escape(o['title'])} → @{target}\n\nСпасибо за покупку!"
-        if spins:
-            text += f"\n🎰 Бонус: +{spins} спин(ов) в разделе «Профиль → {BONUS_NAME} Бонус»."
         try:
             await bot.send_message(uid, text, reply_markup=K.kb_leave_review("fragment", foid))
         except Exception as e:
@@ -832,7 +808,6 @@ async def adm_ok(cb: CallbackQuery, bot: Bot):
                 ton_oid = oid
             db.add_sale(uid, "ton", f"{qty:g} TON → {addr[:8]}…", qty, float(o["amount"]),
                         round(qty * db.get_float("cost_ton", 0.0), 2), 0.0)
-            _ref_spin(uid)
             try:
                 await bot.send_message(uid, f"✅ <b>Заказ #{oid} выполнен!</b>\n\n{qty} GRAM отправлены на адрес:\n"
                                             f"<code>{html.escape(addr)}</code>\n\nСпасибо за покупку!",
@@ -878,7 +853,6 @@ async def adm_done(cb: CallbackQuery, bot: Bot):
         return await cb.answer("Уже обработано.", show_alert=True)
     db.add_sale(int(o["user_id"]), "gram", f"{o['title']} → {o['target'][:12]}…", float(o["qty"]),
                 float(o["amount"]), float(o["cost"]), 0.0)
-    _ref_spin(int(o["user_id"]))
     await cb.answer("Готово")
     try:
         await bot.send_message(int(o["user_id"]), f"✅ <b>Заказ #{oid} выполнен!</b> {html.escape(o['title'])} отправлены на ваш адрес.")
@@ -926,7 +900,6 @@ def _profile_text(uid: int, username: str | None) -> str:
 
 def _profile_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
-        [ib(f"{BONUS_NAME} Бонус", callback_data="st:bonus", style="primary")],
         [ib("Реферальная система", "people", callback_data="st:ref")],
         [ib("Язык / Мова / Language", "globe", callback_data="st:lang")],
         [ib("Назад", "back", callback_data="st:home")]])
@@ -950,83 +923,14 @@ async def on_ref_cb(cb: CallbackQuery):
     await cb.answer()
     link = f"https://t.me/{BOT_USERNAME}?start={cb.from_user.id}"
     kb = InlineKeyboardMarkup(inline_keyboard=[[ib("Назад", "back", callback_data="st:prof")]])
-    await _edit(cb, "👥 <b>Реферальная система</b>\n\nПриглашайте друзей — за каждую покупку приглашённого "
-                    f"вы получаете <b>+1 бесплатный спин</b> в {BONUS_NAME} Бонус.\n\n🔗 Ваша ссылка:\n{link}", kb)
+    await _edit(cb, "👥 <b>Реферальная система</b>\n\nПриглашайте друзей по своей ссылке.\n\n"
+                    f"🔗 Ваша ссылка:\n{link}", kb)
 
 
 @router.callback_query(F.data == "st:prof")
 async def on_prof_cb(cb: CallbackQuery):
     await cb.answer()
     await _edit(cb, _profile_text(cb.from_user.id, cb.from_user.username), _profile_kb())
-
-
-# ── бонус: слоты ──
-def _bonus_text(uid: int) -> str:
-    b = db.bonus_get(uid)
-    return (f"🎁 <b>{BONUS_NAME.upper()} БОНУС</b>\n\n"
-            "Покупай звёзды ⭐ — получай бесплатные 🎰 спины!\n\n"
-            "После покупки тебе автоматически начисляются спины:\n"
-            "<blockquote>⭐ 50 → 🎰 1 спин\n⭐ 100 → 🎰 2 спина\n⭐ 500 → 🎰 5 спинов\n"
-            "⭐ 1000 → 🎰 10 спинов\n⭐ 2000 → 🎰 20 спинов</blockquote>\n"
-            f"🎰 777 — 7 бонусных ⭐, три BAR — 5⭐, три винограда или лимона — 1⭐. Вывод от {WITHDRAW_MIN}⭐.\n\n"
-            "Крути и забирай свой бонус 🍀\n\n"
-            f"<b>Спинов:</b> {b['spins']}\n<b>Бонусный баланс:</b> {b['stars']}⭐")
-
-
-def _bonus_kb() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [ib("КРУТИТЬ", callback_data="st:spin", style="primary")],
-        [ib("Вывести", "money_out", callback_data="st:wd")]])
-
-
-@router.callback_query(F.data == "st:bonus")
-async def on_bonus(cb: CallbackQuery):
-    await cb.answer()
-    await _screen(cb.message, _bonus_text(cb.from_user.id), _bonus_kb(), _photo_or(BONUS_PHOTO_PATH, MENU_PHOTO_PATH))
-
-
-@router.callback_query(F.data == "st:spin")
-async def on_spin(cb: CallbackQuery, bot: Bot):
-    uid = cb.from_user.id
-    async with _locks.setdefault(uid + 10**12, asyncio.Lock()):
-        b = db.bonus_get(uid)
-        if b["spins"] <= 0:
-            return await cb.answer("Нет спинов. Покупайте звёзды — спины начисляются автоматически.", show_alert=True)
-        db.bonus_set(uid, b["spins"] - 1, b["stars"])
-        await cb.answer()
-        dice = await bot.send_dice(cb.message.chat.id, emoji="🎰")
-        await asyncio.sleep(3.5)                               # дожидаемся конца анимации
-        win = SLOT_REWARD.get(dice.dice.value, 0)
-        b = db.bonus_get(uid)
-        db.bonus_set(uid, b["spins"], b["stars"] + win)
-    await bot.send_message(cb.message.chat.id, f"🎰 Выигрыш: <b>+{win}⭐</b>" if win else "🎰 В этот раз не повезло — крутите ещё!")
-    await _edit(cb, _bonus_text(uid), _bonus_kb())
-
-
-@router.callback_query(F.data == "st:wd")
-async def on_withdraw(cb: CallbackQuery, bot: Bot):
-    uid = cb.from_user.id
-    async with _locks.setdefault(uid + 10**12, asyncio.Lock()):
-        b = db.bonus_get(uid)
-        if b["stars"] < WITHDRAW_MIN:
-            return await cb.answer(f"Вывод от {WITHDRAW_MIN}⭐. Сейчас: {b['stars']}⭐", show_alert=True)
-        db.bonus_set(uid, b["spins"], 0)
-    await cb.answer("Заявка отправлена")
-    kb = InlineKeyboardMarkup(inline_keyboard=[[ib("Выплачено", "ok", callback_data=f"st:wdok:{uid}:{b['stars']}")]])
-    await notify_admins(bot, f"💸 <b>Вывод бонусных звёзд</b>\n👤 {user_label(uid, cb.from_user.username, cb.from_user.first_name)}\n"
-                             f"⭐ Сумма: <b>{b['stars']}</b>", kb)
-    await _edit(cb, _bonus_text(uid) + "\n\n✅ Заявка на вывод отправлена администратору.", _bonus_kb())
-
-
-@router.callback_query(F.data.startswith("st:wdok:"), IS_ADMIN)
-async def on_withdraw_ok(cb: CallbackQuery, bot: Bot):
-    _, _, uid, n = cb.data.split(":")
-    await cb.answer("Отмечено")
-    try:
-        await bot.send_message(int(uid), f"✅ Бонусные {n}⭐ выплачены!")
-    except Exception:
-        pass
-    await _finish_admin_msg(cb, f"✅ Выплачено ({_adm_name(cb)})")
 
 
 # ══════════════════ админ-команды настроек ══════════════════

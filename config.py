@@ -105,7 +105,6 @@ PREMIUM_PHOTO_PATH  = os.path.join(IMAGES_DIR, "premium.jpg")
 MENU_PHOTO_PATH     = os.path.join(IMAGES_DIR, "menu.jpg")
 GRAM_PHOTO_PATH     = os.path.join(IMAGES_DIR, "gram.jpg")
 REVIEWS_PHOTO_PATH  = os.path.join(IMAGES_DIR, "reviews.jpg")
-BONUS_PHOTO_PATH    = os.path.join(IMAGES_DIR, "bonus.jpg")
 RENT_PHOTO_PATH     = os.path.join(IMAGES_DIR, "rent.jpg")
 PAY_PHOTO_PATH      = os.path.join(IMAGES_DIR, "pay.jpg")
 RECIPIENT_PHOTO_PATH = os.path.join(IMAGES_DIR, "recipient.jpg")   # баннер «КОМУ ОТПРАВИТЬ» (recipient_<язык>.jpg)
@@ -236,6 +235,5 @@ EMOJI_GOLD      = _t("gold", "🥇")
 EMOJI_STARS     = _t("stars", "⭐")
 EMOJI_CARD      = _t("atm", "💳")
 
-# Название бонус-игры (на кнопке и в тексте) и ссылка кнопки «Перейти» в разделе «Аренда NFT»
-BONUS_NAME           = os.getenv("BONUS_NAME", "SHOU").strip()
+# Ссылка кнопки «Перейти» в разделе «Аренда NFT»
 RENT_URL             = os.getenv("RENT_URL", "https://t.me/shounft_rent").strip() or SUPPORT_URL

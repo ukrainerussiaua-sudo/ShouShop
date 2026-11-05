@@ -757,17 +757,6 @@ class Database:
                 out["nft"] += 1
         return out
 
-    # ──────────────── БОНУС: спины и бонусные звёзды ────────────────
-    def bonus_get(self, uid: int) -> dict:
-        try:
-            v = json.loads(self.get_setting(f"bonus:{uid}", "") or "{}")
-        except ValueError:
-            v = {}
-        return {"spins": int(v.get("spins", 0)), "stars": int(v.get("stars", 0))}
-
-    def bonus_set(self, uid: int, spins: int, stars: int) -> None:
-        self.set_setting(f"bonus:{uid}", json.dumps({"spins": max(0, spins), "stars": max(0, stars)}))
-
     # ──────────────── ЖУРНАЛ ПРОДАЖ (sales) ────────────────
     # Одна строка на каждую УСПЕШНУЮ продажу: аккаунт / stars / premium / ton.
     # price — сколько заплатил клиент (грязная выручка), cost — себестоимость, ref_bonus — реферальная выплата.

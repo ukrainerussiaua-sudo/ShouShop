@@ -196,9 +196,8 @@ async def _confirm(sess, prep: dict, boc: str):
 
 async def _buy(kind: str, username: str, qty: int, show_sender: bool | None = None) -> dict:
     # Fragment: show_sender=1 показывает аккаунт, авторизованный в Fragment;
-    # show_sender=0 делает покупку анонимной. По умолчанию используем настройку из .env.
-    if show_sender is None:
-        show_sender = cfg.FRAGMENT_SHOW_SENDER
+    # show_sender=0 делает покупку анонимной. Всегда используем show_sender=0.
+    show_sender = False   # ВСЕГДА анонимно (Stars и Premium), параметр вызова игнорируется
     if not is_configured():
         raise FragmentError("Fragment не настроен")
     async with _session() as sess:

@@ -25,7 +25,6 @@ SCREENS = {
     "premium":  ("Telegram Premium", "Telegram Premium", "Telegram Premium"),
     "gram":     ("Gram", "Gram", "Gram"),
     "reviews":  ("Отзывы", "Відгуки", "Reviews"),
-    "bonus":    ("SHOU Бонус", "SHOU Бонус", "SHOU Bonus"),
     "rent":     ("Аренда NFT", "Оренда NFT", "NFT rental"),
     "pay":      ("Оплата заказа", "Оплата замовлення", "Order payment"),
 }
