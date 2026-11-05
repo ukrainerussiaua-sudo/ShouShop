@@ -19,7 +19,7 @@ import texts as T
 from config import ADMIN_IDS, BOT_USERNAME, CUR, REF_BONUS, NFT_CHANNEL, NFT_WAREHOUSE_IDS, NFT_BUSINESS_CONNECTION_ID
 from database import db
 from keyboards import A_NFT, B_NFT, B_SKIP, ib
-from utils import notify_admins, user_label, money, answer_screen, NFT_PHOTO
+from utils import notify_admins, user_label, money, answer_screen, NFT_PHOTO, edit_screen
 
 router = Router()
 IS_ADMIN = F.from_user.id.in_(ADMIN_IDS)
@@ -420,7 +420,7 @@ async def on_nft_menu(msg: Message, state: FSMContext):
 async def on_nft_page(cb: CallbackQuery):
     gifts = _in_sale()
     await cb.answer()
-    await _edit(cb, _txt_list(gifts), _kb_list(gifts, int(cb.data.split(":")[2])) if gifts else None)
+    await edit_screen(cb, _txt_list(gifts), _kb_list(gifts, int(cb.data.split(":")[2])) if gifts else None, NFT_PHOTO())
 
 
 @router.callback_query(F.data == "nft:noop")
@@ -448,7 +448,7 @@ async def _render_view(cb: CallbackQuery, gid: int) -> bool:
     g = db.nft_get(gid)
     if not g or g.get("status") != "available" or float(g.get("price") or 0) <= 0:
         gifts = _in_sale()
-        await _edit(cb, _txt_list(gifts), _kb_list(gifts, 0) if gifts else None)
+        await edit_screen(cb, _txt_list(gifts), _kb_list(gifts, 0) if gifts else None, NFT_PHOTO())
         return False
     await _edit(cb, _card(g, db.balance(cb.from_user.id)), _kb_nft_card(g),
                 link_preview_options=LinkPreviewOptions(is_disabled=False, url=g["link"], show_above_text=True))

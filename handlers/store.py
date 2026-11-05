@@ -30,7 +30,7 @@ from config import (ADMIN_IDS, SHOP_NAME, SUPPORT_URL, REVIEWS_CHANNEL_URL, BOT_
 from database import db
 import keyboards as K
 from keyboards import B_STARS, B_PREMIUM, B_GRAM, B_NFT, B_PROFILE, B_REVIEWS, B_RENT, ib
-from utils import _photo, notify_admins, user_label, send_lang_chooser
+from utils import _photo, notify_admins, user_label, send_lang_chooser, edit_screen
 
 router = Router()
 IS_ADMIN = F.from_user.id.in_(ADMIN_IDS)
@@ -179,6 +179,12 @@ async def _to_main(cb: CallbackQuery):
             await m.edit_media(InputMediaPhoto(media=ph, caption=txt_shop()))
         elif m.photo or m.document or m.video:
             await m.edit_caption(caption=txt_shop())
+        elif ph:                               # текстовое сообщение (карточка/список без баннера) → меню с баннером
+            try:
+                await m.delete()
+            except Exception:
+                return await m.edit_text(txt_shop())
+            await m.answer_photo(ph, caption=txt_shop())
         else:
             await m.edit_text(txt_shop())
     except Exception as e:
@@ -617,8 +623,9 @@ async def _nft_kb(state: FSMContext, page: int):
 
 async def _render_nft_list(cb: CallbackQuery, state: FSMContext, page: int):
     kb, has = await _nft_kb(state, page)
-    await _edit(cb, "🎁 <b>NFT-каталог</b>\nВыберите подарок:" if has else
-                "🎁 <b>NFT-каталог</b>\n\nСейчас в продаже нет NFT. Загляните позже!", kb)
+    await edit_screen(cb, "🎁 <b>NFT-каталог</b>\nВыберите подарок:" if has else
+                      "🎁 <b>NFT-каталог</b>\n\nСейчас в продаже нет NFT. Загляните позже!", kb,
+                      _photo_or(NFT_PHOTO_PATH, MENU_PHOTO_PATH))
 
 
 @router.message(F.text == B_NFT)

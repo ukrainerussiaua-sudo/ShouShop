@@ -187,6 +187,30 @@ async def answer_screen(msg: Message, text: str, kb, photo=None):
                             disable_web_page_preview=True)
 
 
+async def edit_screen(cb, text: str, kb=None, photo=None):
+    """«Назад/К списку»: возвращает экран С БАННЕРОМ.
+    • сообщение с баннером → меняем подпись;
+    • обычное текстовое сообщение (например, карточка товара) и есть баннер → удаляем его и шлём экран с баннером;
+    • иначе — обычное редактирование текста."""
+    from aiogram.types import LinkPreviewOptions
+    m = cb.message
+    try:
+        if m.photo or m.document or m.video:
+            return await m.edit_caption(caption=text, reply_markup=kb, parse_mode=ParseMode.HTML)
+        if photo:
+            try:
+                await m.delete()
+            except Exception:
+                pass                      # не удалилось (старое сообщение) — редактируем текстом ниже
+            else:
+                return await answer_screen(m, text, kb, photo)
+        return await m.edit_text(text, reply_markup=kb, parse_mode=ParseMode.HTML,
+                                 link_preview_options=LinkPreviewOptions(is_disabled=True))
+    except Exception as e:
+        if "not modified" not in str(e):
+            print(f"[edit_screen] {e!r}")
+
+
 async def run_with_dots(msg: Message, label: str, coro):
     """
     Показывает «label.» → «label..» → «label...» пока выполняется coro.
